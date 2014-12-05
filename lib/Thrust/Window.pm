@@ -64,4 +64,19 @@ sub _pre {
 }
 
 
+sub on {
+  my ($self, $event, $cb) = @_;
+
+  push @{ $self->{events}->{$event} }, $cb;
+}
+
+sub _trigger {
+  my ($self, $event, $args) = @_;
+
+  foreach my $cb (@{ $self->{events}->{$event} }) {
+    $cb->($args);
+  }
+}
+
+
 1;

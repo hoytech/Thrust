@@ -9,6 +9,7 @@ use AnyEvent::Util;
 use AnyEvent::Handle;
 use JSON::XS;
 use File::ShareDir;
+use Scalar::Util;
 
 use Thrust::Window;
 
@@ -53,7 +54,11 @@ sub new {
           warn "reply to unknown request";
         }
       } elsif ($msg->{_action} eq 'event') {
-          print "EVENT: $line\n";
+        my $window = $self->{windows}->{$msg->{_target}};
+
+        if ($window) {
+          $window->_trigger($msg->{_type}, $msg->{_event});
+        }
       }
     }
 
@@ -93,7 +98,10 @@ sub window {
   bless $window, 'Thrust::Window';
 
   $self->do_action({ '_action' => 'create', '_type' => 'window', '_args' => \%args, }, sub {
-    $window->{target} = $_[0]->{_target};
+    my $id = $_[0]->{_target};
+    $window->{target} = $id;
+    $self->{windows}->{$id} = $window;
+    Scalar::Util::weaken $self->{windows}->{$id};
     $window->_trigger_event('ready');
   });
 
@@ -152,7 +160,7 @@ Doug Hoyte, C<< <doug@hcsw.org> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2012-2014 Doug Hoyte.
+Copyright 2014 Doug Hoyte.
 
 This module is licensed under the same terms as perl itself.
 
