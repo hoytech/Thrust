@@ -1,0 +1,7 @@
+Changes
+lib/Thrust.pm
+lib/Thrust/Window.pm
+Makefile.PL
+MANIFEST
+MANIFEST.SKIP
+t/load.t

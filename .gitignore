@@ -1,0 +1,11 @@
+README
+Makefile
+Makefile.old
+MYMETA.*
+blib/
+pm_to_blib
+MANIFEST.bak
+Thrust-*.tar.gz
+thrust.zip
+thrust.zip.partial
+share/

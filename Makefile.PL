@@ -1,0 +1,59 @@
+use strict;
+
+use ExtUtils::MakeMaker;
+
+use LWP::Simple;
+use Archive::Unzip::Burst;
+use File::ShareDir::Install;
+
+
+my $thrust_zipfile_url = 'https://github.com/breach/thrust/releases/download/v0.7.6/thrust-v0.7.6-linux-x64.zip';
+
+if (!-e 'thrust.zip') {
+  print "Downloading $thrust_zipfile_url (be patient)\n";
+  unlink('thrust.zip.partial');
+  getstore($thrust_zipfile_url, 'thrust.zip.partial');
+  rename('thrust.zip.partial', 'thrust.zip');
+}
+
+if (!-d 'share') {
+  print "Extracting into share/\n";
+  mkdir('share');
+  Archive::Unzip::Burst::unzip('thrust.zip', 'share/');
+}
+
+install_share 'share';
+
+
+my %args = (
+  NAME => 'Thrust',
+  VERSION_FROM => 'lib/Thrust.pm',
+  LIBS => [''],
+  INC => '-I lib/',
+  PREREQ_PM => {
+    'common::sense' => 0,
+    'AnyEvent' => 0,
+    'JSON::XS' => 0,
+    'File::ShareDir' => 0,
+  },
+  CONFIGURE_REQUIRES => {
+    'LWP::Simple' => 0,
+    'Archive::Unzip::Burst' => 0,
+    'File::ShareDir::Install' => 0,
+  },
+  LICENSE => 'perl',
+  dist => {
+    PREOP => 'pod2text $(VERSION_FROM) > $(DISTVNAME)/README',
+  },
+  META_MERGE => {
+    resources => {
+      repository => 'git://github.com/hoytech/Thrust.git',
+      bugtracker => 'https://github.com/hoytech/Thrust/issues',
+    },
+  },
+);
+
+WriteMakefile(%args);
+
+package MY;
+use File::ShareDir::Install qw(postamble);
