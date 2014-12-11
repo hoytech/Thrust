@@ -44,7 +44,7 @@ sub new {
   my ($class, %args) = @_;
 
   my $self = {
-    action_id => 10,
+    action_id => 10, # start at 10 to make groking protocol a bit easier from debug dumps
   };
 
   bless $self, $class;
@@ -55,7 +55,7 @@ sub new {
                         close_all => 1,
                         '>' => $fh2,
                         '<' => $fh2,
-                        '2>' => $ENV{THRUST_DEBUG} >= 2 ? \*STDERR : '/dev/null',
+                        '2>' => $ENV{THRUST_DEBUG} >= 2 ? \*STDERR : '/dev/null', ## FIXME: /dev/null not portable
                         '$$' => \$self->{pid};
 
   close $fh2;
@@ -179,7 +179,7 @@ Thrust - Perl bindings to the Thrust cross-platform application framework
 
 Thrust is a chromium-based cross-platform and cross-language application framework. It allows you to create "native"-like applications using HTML/CSS for the interface and (of course) perl for the glue code to filesystems, DBs, networking, libraries, and everything else perl is great at.
 
-This is the easiest way to install this package:
+This is the easiest way to install perl-thrust:
 
     curl -sL https://raw.github.com/miyagawa/cpanminus/master/cpanm | sudo perl - Thrust
 
@@ -210,11 +210,15 @@ If present, the callback must be the final argument. For methods that require pa
 
 =head1 EVENT HANDLERS
 
-Window objects have an C<on> method which allows you to append a callback to be invoked when a particular event is triggered. You can see the event traffic to and from the thrust shell by setting the environment variable L<THRUST_DEBUG> to 1 or higher. Set it to 2 or higher to also see the standard error debugging output from the C<thrust_shell> process.
+Window objects have an C<on> method which allows you to append a callback to be invoked when a particular event is triggered.
 
-Here is a simple example of what happens when you create and show a window:
+For example, normally closing a window will not cause the termination of your perl program. Instead, the C<closed> event will be triggered. By default nothing is listening for this event so it is discarded. If you want you can make the closing of one or more windows terminate your perl program as well (which in turn kills all the other windows this process has started):
 
-    $ THRUST_DEBUG=1 perl -MThrust -E 'Thrust->new->window->show->run' 
+    $window->on(closed => sub { exit });
+
+See the thrust API docs for information on the potential events and actions. To snoop on the event traffic to and from the thrust shell, set the environment variable L<THRUST_DEBUG> to C<1> or higher. Set it to C<2> or higher to also see the standard error debugging output from the C<thrust_shell> process. Here is a simple example of the traffic when you create and show a window:
+
+    $ THRUST_DEBUG=1 perl -MThrust -e 'Thrust->new->window->show->run'
 
     Sending to thrust shell >>>>>>>>>>>>>>>>>
     {
@@ -264,9 +268,6 @@ Here is a simple example of what happens when you create and show a window:
                    "_type" : "focus"
                 }
 
-Normally closing a window will not cause the termination of your perl program. Instead, an event will be triggered. By default nothing is listening for this event so it is discarded. If you wanted you can cause the close of 1 or more windows to trigger the termination of your perl program by listening for the C<closed> event:
-
-    $window->on(closed => sub { exit });
 
 =head1 REMOTE EVENTS
 
