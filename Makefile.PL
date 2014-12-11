@@ -7,7 +7,24 @@ use Archive::Unzip::Burst;
 use File::ShareDir::Install;
 
 
-my $thrust_zipfile_url = 'https://github.com/breach/thrust/releases/download/v0.7.6/thrust-v0.7.6-linux-x64.zip';
+my $thrust_version = '0.7.6';
+
+my ($os, $arch);
+
+if ($^O =~ /linux/i) {
+  $os = 'linux';
+  $arch = length(pack("P", 0)) == 8 ? 'x64' : 'ia32';
+} elsif ($^O =~ /darwin/i) {
+  $os = 'darwin';
+  $arch = 'x64';
+} elsif ($^O =~ /mswin/i) {
+  $os = 'win32';
+  $arch = 'ia32';
+} else {
+  die "Your platform is currently not supported by Thrust";
+}
+
+my $thrust_zipfile_url = "https://github.com/breach/thrust/releases/download/v$thrust_version/thrust-v$thrust_version-$os-$arch.zip";
 
 if (!-e 'thrust.zip') {
   print "Downloading $thrust_zipfile_url (be patient)\n";
