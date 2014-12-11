@@ -216,6 +216,10 @@ For example, normally closing a window will not cause the termination of your pe
 
     $window->on(closed => sub { exit });
 
+If you ever wish to remove handlers for an event, window objects also have a C<clear> method:
+
+    $window->clear('closed');
+
 See the thrust API docs for information on the potential events and actions. To snoop on the event traffic to and from the thrust shell, set the environment variable L<THRUST_DEBUG> to C<1> or higher. Set it to C<2> or higher to also see the standard error debugging output from the C<thrust_shell> process. Here is a simple example of the traffic when you create and show a window:
 
     $ THRUST_DEBUG=1 perl -MThrust -e 'Thrust->new->window->show->run'
@@ -295,11 +299,7 @@ On the javascript side, you will need to install a handler like so:
         console.log(msg['foo']); // prints bar
     });
 
-B<IMPORTANT NOTE>: Before applications can send messages from perl to javascript, the C<THRUST.remote.listen> function must have been called. If you try to send a message before this, it is likely that the message will be delivered to the browser before the handler has been installed so your message will be lost. After they have started and initialised their remote handlers, applications should have javascript send a message to perl indicating that the communication channel is ready and that perl can begin sending messages to the browser.
-
-If you ever wish to remove handlers for an event, window objects also have a C<clear> method:
-
-    $w->clear('remote');
+B<IMPORTANT NOTE>: Before applications can send messages from perl to javascript, the C<THRUST.remote.listen> function must have been called. If you try to send a message before this, it is likely that the message will be delivered to the browser before the handler has been installed so your message will be lost. Applications should make javascript send a message indicating that the communication channel is ready to indicate to the perl component that it can begin sending messages to the browser.
 
 =head1 TESTS
 
