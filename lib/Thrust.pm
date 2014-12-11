@@ -17,6 +17,29 @@ use Thrust::Window;
 our $THRUST_PATH = File::ShareDir::dist_dir('Thrust') .  '/thrust_shell';
 our $THRUST_BOUNDARY = "\n--(Foo)++__THRUST_SHELL_BOUNDARY__++(Bar)--\n";
 
+
+
+
+my $js;
+
+sub debug {
+  my ($level, $msg_cb, $to_dump, $indent) = @_;
+
+  return if $level > $ENV{THRUST_DEBUG};
+
+  $js ||=  JSON::XS->new->pretty->canonical;
+
+  my $out = "\n" . $msg_cb->() . "\n";
+
+  $out .= $js->encode($to_dump) . "\n" if $to_dump;
+
+  $out =~ s/\n/\n                /g if $indent;
+
+  print STDERR $out;
+}
+
+
+
 sub new {
   my ($class, %args) = @_;
 
@@ -32,6 +55,7 @@ sub new {
                         close_all => 1,
                         '>' => $fh2,
                         '<' => $fh2,
+                        '2>' => $ENV{THRUST_DEBUG} >= 2 ? \*STDERR : '/dev/null',
                         '$$' => \$self->{pid};
 
   close $fh2;
@@ -46,6 +70,9 @@ sub new {
     my $msg = eval { decode_json($line) };
 
     if (defined $msg) {
+
+      debug(1, sub { "<<<<<<<<<<<<<<<<< Message from thrust shell" }, $msg, 1);
+
       if ($msg->{_action} eq 'reply') {
         my $action_cb = $self->{actions}->{$msg->{_id}};
         if ($action_cb) {
@@ -84,6 +111,8 @@ sub do_action {
   my $action_id = $self->{action_id}++;
 
   $params->{_id} = $action_id;
+
+  debug(1, sub { "Sending to thrust shell >>>>>>>>>>>>>>>>>" }, $params);
 
   $self->{hdl}->push_write(json => $params);
 
@@ -156,9 +185,9 @@ This is the easiest way to install this package:
 
 Read more about Thrust at its L<official website|https://github.com/breach/thrust>. There are bindings for many other languages such as node.js, go, and python.
 
-Like the bindings for other languages, installing the perl module will download a zip file containing the C<thrust_shell> binary. It will extract this into the perl distribution's private share directory.
+Like the bindings for other languages, installing the perl module will download a zip file from github which contains the C<thrust_shell> binary. It will extract this into the perl distribution's private share directory.
 
-Unlike the bindings for other languages, in the perl ones there are no definitions for individual thrust methods. Instead, an AUTOLOAD is used to automatically "forward" all perl method calls (and their JSON encoded arguments) to the thrust shell. This has the advantage that there is generally no need to do anything to the perl-bindings side when new methods/parameters are added to the thrust shell. However, it has the disadvantage that sometimes the API is less convenient. For instance, instead of positional arguments in (for example) the C<move> method, you must use the named C<x> and C<y> parameters.
+Unlike the bindings for other languages, in the perl ones there are no definitions for individual thrust methods. Instead, an AUTOLOAD is used to automatically "forward" all perl method calls (and their JSON encoded arguments) to the thrust shell. This has the advantage that there is generally no need to do anything to the perl bindings side when new methods/parameters are added to the thrust shell. However, it has the disadvantage that sometimes the API is less convenient. For instance, instead of positional arguments in (for example) the C<move> method, you must use the named C<x> and C<y> parameters.
 
 Like the bindings in other languages, methods can be invoked on a window object even before the window is created. The methods will be queued up and invoked in order once the window is ready. After that point, all messages are delivered to the window asynchronously. Unlike the other bindings, the perl bindings also support method chaining and a special C<run> method on the window. For example, here is a one-liner command to open a maximized window with the dev tools console expanded:
 
@@ -179,11 +208,71 @@ If present, the callback must be the final argument. For methods that require pa
     $w->resize({ width => 100, height => 100 },
                sub { say "window has been resized" });
 
-=head1 REMOTE EVENTS AND HANDLERS
+=head1 EVENT HANDLERS
 
-One of the most useful features of thrust is its support for bi-directional messaging between your application and the browser. It does this over the control pipes already opened to communicate with the thrust shell so there is no additional setup required such as starting an AJAX/websocket server.
+Window objects have an C<on> method which allows you to append a callback to be invoked when a particular event is triggered. You can see the event traffic to and from the thrust shell by setting the environment variable L<THRUST_DEBUG> to 1 or higher. Set it to 2 or higher to also see the standard error debugging output from the C<thrust_shell> process.
 
-In order for the browser to send a message to your perl code, have it execute something like the following javascript code:
+Here is a simple example of what happens when you create and show a window:
+
+    $ THRUST_DEBUG=1 perl -MThrust -E 'Thrust->new->window->show->run' 
+
+    Sending to thrust shell >>>>>>>>>>>>>>>>>
+    {
+       "_action" : "create",
+       "_args" : {},
+       "_id" : 10,
+       "_type" : "window"
+    }
+
+
+                <<<<<<<<<<<<<<<<< Message from thrust shell
+                {
+                   "_action" : "reply",
+                   "_error" : "",
+                   "_id" : 10,
+                   "_result" : {
+                      "_target" : 1
+                   }
+                }
+                
+                
+    Sending to thrust shell >>>>>>>>>>>>>>>>>
+    {
+       "_action" : "call",
+       "_args" : null,
+       "_id" : 11,
+       "_method" : "show",
+       "_target" : 1
+    }
+
+
+                <<<<<<<<<<<<<<<<< Message from thrust shell
+                {
+                   "_action" : "reply",
+                   "_error" : "",
+                   "_id" : 11,
+                   "_result" : {}
+                }
+                
+                
+                <<<<<<<<<<<<<<<<< Message from thrust shell
+                {
+                   "_action" : "event",
+                   "_event" : {},
+                   "_id" : 1,
+                   "_target" : 1,
+                   "_type" : "focus"
+                }
+
+Normally closing a window will not cause the termination of your perl program. Instead, an event will be triggered. By default nothing is listening for this event so it is discarded. If you wanted you can cause the close of 1 or more windows to trigger the termination of your perl program by listening for the C<closed> event:
+
+    $window->on(closed => sub { exit });
+
+=head1 REMOTE EVENTS
+
+One of the most useful features of thrust is its support for bi-directional messaging between your application and the browser over pipes connecting to the thrust shell's stdin/stdout. Without this support we would need to allocate some kind of network port or unix socket file and start something like an AJAX or websocket server.
+
+In order for the browser to send a message to your perl code, it should execute something like the following javascript code:
 
     THRUST.remote.send({ foo: 'bar' }); // send message to perl
 
@@ -217,9 +306,11 @@ Currently this software has two tests, C<load.t> that verifies L<Thrust> is inst
 
 =head1 BUGS
 
-Haha this software is so beta.
+Haha this software is so beta. I've only tested this so far on 64-bit linux so the cross-platform claim is theoretical.
 
 Only the window object is currently exposed. Eventually the window code should be refactored into a base class so that session and menu can be implemented as well (as done in the node.js bindings).
+
+Add a test that verifies C<thrust_shell> is killed when your program exits or is killed.
 
 The perl bindings don't report errors from the thrust shell properly to your code yet. Eventually I think they should use L<Callback::Frame>.
  
@@ -227,9 +318,7 @@ Actually C<thrust_shell> doesn't have great error checking itself. Any error mes
 
     AnyEvent::Handle uncaught error: Broken pipe at /usr/local/lib/perl/5.18.2/AnyEvent/Loop.pm line 248.
 
-Lastly, I've only tested this so far on 64-bit linux so the cross-platform claim is theoretical.
-
-Add a test that verifies C<thrust_shell> is always killed exits when your perl program exits (i verified this manually).
+The fact that C<thrust_shell> binaries are duplicated for every language binding is good and bad: depending on how backwards compatible everything is, duplication may be necessary because of protocol changes. It's bad in that you can't immediately apply bug-fixes to all copies of C<thrust_shell> on your system.
 
 =head1 SEE ALSO
 

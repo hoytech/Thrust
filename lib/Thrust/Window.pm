@@ -52,7 +52,6 @@ sub _call {
   return $self;
 }
 
-
 sub _pre {
   my ($self, $cb) = @_;
 
@@ -64,30 +63,38 @@ sub _pre {
 }
 
 
-sub on {
-  my ($self, $event, $cb) = @_;
-
-  push @{ $self->{events}->{$event} }, $cb;
-}
-
-sub clear {
-  my ($self, $event) = @_;
-
-  delete $self->{events}->{$event};
-}
-
-sub run {
-  my ($self) = @_;
-
-  $self->{thrust}->run;
-}
-
 sub _trigger {
   my ($self, $event, $args) = @_;
 
   foreach my $cb (@{ $self->{events}->{$event} }) {
     $cb->($args);
   }
+}
+
+
+
+sub on {
+  my ($self, $event, $cb) = @_;
+
+  push @{ $self->{events}->{$event} }, $cb;
+
+  return $self;
+}
+
+sub clear {
+  my ($self, $event) = @_;
+
+  delete $self->{events}->{$event};
+
+  return $self;
+}
+
+sub run {
+  my ($self) = @_;
+
+  $self->{thrust}->run;
+
+  return $self;
 }
 
 
