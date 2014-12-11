@@ -70,6 +70,12 @@ sub on {
   push @{ $self->{events}->{$event} }, $cb;
 }
 
+sub clear {
+  my ($self, $event) = @_;
+
+  delete $self->{events}->{$event};
+}
+
 sub _trigger {
   my ($self, $event, $args) = @_;
 
