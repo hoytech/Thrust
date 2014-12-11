@@ -76,6 +76,12 @@ sub clear {
   delete $self->{events}->{$event};
 }
 
+sub run {
+  my ($self) = @_;
+
+  $self->{thrust}->run;
+}
+
 sub _trigger {
   my ($self, $event, $args) = @_;
 

@@ -71,7 +71,11 @@ sub new {
 }
 
 sub run {
-  AE::cv->recv;
+  my ($self) = @_;
+
+  $self->{cv} = AE::cv;
+
+  $self->{cv}->recv;
 }
 
 sub do_action {
@@ -135,26 +139,36 @@ Thrust - Perl bindings to the Thrust cross-platform application framework
     my $t = Thrust->new;
 
     my $w = $t->window(
-              root_url => 'data:text/html;charset=utf-8,Hello World!',
+              root_url => 'data:text/html,Hello World!', ## or file://, https://, etc
               title => 'My App',
-              size => { width => 400, height => 400 },
+              size => { width => 800, height => 600 },
             )->show;
 
-    $t->run;
+    $t->run; ## enter event loop
 
 =head1 DESCRIPTION
 
-Thrust is a chromium-based cross-platform / cross-language application framework. Read more about it at its L<official website|https://github.com/breach/thrust>.
+Thrust is a chromium-based cross-platform and cross-language application framework. It allows you to create "native"-like applications using HTML/CSS for the interface and (of course) perl for the glue code to filesystems, DBs, networking, libraries, and everything else perl is great at.
 
-Like the bindings for other languages, installing this module will download a zip file containing the thrust_shell binary and required libraries and will store it in the distribution's share directory.
+This is the easiest way to install this package:
 
-Unlike the bindings for other languages, in perl we don't have wrapper functions for every method exposed by the thrust shell. This has the advantage that there is generally no need to update the bindings when new methods/parameters are added to the thrust shell, but has the disadvantage that sometimes the API is less convenient. For instance, instead of positional arguments in (for example) the C<move> method, you must use the named C<x> and C<y> parameters.
+    curl -sL https://raw.github.com/miyagawa/cpanminus/master/cpanm | sudo perl - Thrust
+
+Read more about Thrust at its L<official website|https://github.com/breach/thrust>. There are bindings for many other languages such as node.js, go, and python.
+
+Like the bindings for other languages, installing the perl module will download a zip file containing the C<thrust_shell> binary. It will extract this into the perl distribution's private share directory.
+
+Unlike the bindings for other languages, in the perl ones there are no definitions for individual thrust methods. Instead, an AUTOLOAD is used to automatically "forward" all perl method calls (and their JSON encoded arguments) to the thrust shell. This has the advantage that there is generally no need to do anything to the perl-bindings side when new methods/parameters are added to the thrust shell. However, it has the disadvantage that sometimes the API is less convenient. For instance, instead of positional arguments in (for example) the C<move> method, you must use the named C<x> and C<y> parameters.
+
+Like the bindings in other languages, methods can be invoked on a window object even before the window is created. The methods will be queued up and invoked in order once the window is ready. After that point, all messages are delivered to the window asynchronously. Unlike the other bindings, the perl bindings also support method chaining and a special C<run> method on the window. For example, here is a one-liner command to open a maximized window with the dev tools console expanded:
+
+    $ perl -MThrust -e 'Thrust->new->window->show->maximize->open_devtools->run'
 
 =head1 ASYNC PROGRAMMING
 
-Like browser programming itself, programming the perl side of a Thrust application is done in an asynchronous style. The Thrust package depends on AnyEvent for this purpose so you can use whichever event loop you prefer. See the L<AnyEvent> documentation for details on asynchronous programming.
+Like browser programming itself, programming the perl side of a Thrust application is done asynchronously. The Thrust package depends on L<AnyEvent> for this purpose so you can use whichever event loop you prefer. See the L<AnyEvent> documentation for details on asynchronous programming.
 
-The C<run> method of the Thrust context object simply waits on a condition variable that will never be signalled in order to enter the event loop.
+The C<run> methods of the Thrust context/window objects simply wait on a condition variable that will never be signalled (well you can if you want to, it's in C<< $t->{cv} >>) in order to enter the event loop and "sleep forever". C<run> is mostly there so you don't need to type C<< use AnyEvent; AE::cv->recv >> in simple scripts/examples.
 
 Almost all methods on the window object can optionally take a callback argument that will be called once the operation has been completed. For example:
 
@@ -165,19 +179,13 @@ If present, the callback must be the final argument. For methods that require pa
     $w->resize({ width => 100, height => 100 },
                sub { say "window has been resized" });
 
-Like the bindings in other languages, methods can be invoked on a window object even before the window is created. The methods will be queued up and invoked once the window is ready. Unlike the other bindings, the perl bindings also support method chaining so you can write in a convenient style like so:
-
-    Thrust->new->window->open_devtools->show;
-
-    AE::cv->recv; ## enter event loop
-
 =head1 REMOTE EVENTS AND HANDLERS
 
 One of the most useful features of thrust is its support for bi-directional messaging between your application and the browser. It does this over the control pipes already opened to communicate with the thrust shell so there is no additional setup required such as starting an AJAX/websocket server.
 
-In order for the browser to send a message to your perl code, have it execute something like the following javascript:
+In order for the browser to send a message to your perl code, have it execute something like the following javascript code:
 
-    THRUST.remote.send({ foo: 'bar' });
+    THRUST.remote.send({ foo: 'bar' }); // send message to perl
 
 On the perl side, you will need to install an event handler for the C<remote> event by calling the C<on> method of a window object:
 
@@ -203,13 +211,25 @@ If you ever wish to remove handlers for an event, window objects also have a C<c
 
     $w->clear('remote');
 
+=head1 TESTS
+
+Currently this software has two tests, C<load.t> that verifies L<Thrust> is installed and C<remote.t> which starts and shows the thrust shell, then proceeds to confirm bi-directional transfer of messages between javascript and perl. Maybe the test-suite shouldn't show a window by default?
+
 =head1 BUGS
 
-Only the window object is exposed currently. Eventually the window code should be refactored into a base class so that session and menu can be implemented as well (as done in the node.js bindings).
+Haha this software is so beta.
 
-The error handling is pretty poor right now. This is partly due to the fact that the perl bindings are incomplete, and partly due to the fact that the thrust_shell doesn't have great error checking either. Any error messages like the following probably indicate that you passed in some malformed arguments and the thrust_shell terminated abnormally:
+Only the window object is currently exposed. Eventually the window code should be refactored into a base class so that session and menu can be implemented as well (as done in the node.js bindings).
+
+The perl bindings don't report errors from the thrust shell properly to your code yet. Eventually I think they should use L<Callback::Frame>.
+ 
+Actually C<thrust_shell> doesn't have great error checking itself. Any error messages like the following probably indicate that you passed in some malformed argument and terminated the thrust_shell abnormally:
 
     AnyEvent::Handle uncaught error: Broken pipe at /usr/local/lib/perl/5.18.2/AnyEvent/Loop.pm line 248.
+
+Lastly, I've only tested this so far on 64-bit linux so the cross-platform claim is theoretical.
+
+Add a test that verifies C<thrust_shell> is always killed exits when your perl program exits (i verified this manually).
 
 =head1 SEE ALSO
 
