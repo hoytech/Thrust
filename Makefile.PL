@@ -52,6 +52,7 @@ my %args = (
     'AnyEvent' => 0,
     'JSON::XS' => 0,
     'File::ShareDir' => 0,
+    'Scalar::Util' => 0,
   },
   CONFIGURE_REQUIRES => {
     'LWP::Simple' => 0,
