@@ -5,3 +5,5 @@ Makefile.PL
 MANIFEST
 MANIFEST.SKIP
 t/load.t
+t/remote.t
+t/static/remote.html
