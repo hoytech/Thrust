@@ -187,7 +187,7 @@ Read more about Thrust at its L<official website|https://github.com/breach/thrus
 
 Like the bindings for other languages, installing the perl module will download a zip file from github which contains the C<thrust_shell> binary. It will extract this into the perl distribution's private share directory.
 
-Unlike the bindings for other languages, in the perl ones there are no definitions for individual thrust methods. Instead, an AUTOLOAD is used to automatically "forward" all perl method calls (and their JSON encoded arguments) to the thrust shell. This has the advantage that there is generally no need to do anything to the perl bindings side when new methods/parameters are added to the thrust shell. However, it has the disadvantage that sometimes the API is less convenient. For instance, instead of positional arguments in (for example) the C<move> method, you must use the named C<x> and C<y> parameters.
+Unlike the bindings for other languages, in the perl ones there are no definitions for individual thrust methods. Instead, an AUTOLOAD is used to automatically "forward" all perl method calls (and their JSON encoded arguments) to the thrust shell. This has the advantage that there is generally no need to do anything to the perl bindings when new methods/parameters are added to the thrust shell. However, it has the disadvantage that sometimes the API is less convenient. For instance, instead of positional arguments in (for example) the C<move> method, you must use the named C<x> and C<y> parameters.
 
 Like the bindings in other languages, methods can be invoked on a window object even before the window is created. The methods will be queued up and invoked in order once the window is ready. After that point, all messages are delivered to the window asynchronously. Unlike the other bindings, the perl bindings also support method chaining and a special C<run> method on the window. For example, here is a one-liner command to open a maximized window with the dev tools console expanded:
 
@@ -220,7 +220,7 @@ If you ever wish to remove handlers for an event, window objects also have a C<c
 
     $window->clear('closed');
 
-See the thrust API docs for information on the potential events and actions. To snoop on the event traffic to and from the thrust shell, set the environment variable L<THRUST_DEBUG> to C<1> or higher. Set it to C<2> or higher to also see the standard error debugging output from the C<thrust_shell> process. Here is a simple example of the traffic when you create and show a window:
+See the thrust API docs for information on the potential events and actions. To snoop on the event traffic to and from the thrust shell, set the environment variable C<THRUST_DEBUG> to C<1> or higher. Set it to C<2> or higher to also see the standard error debugging output from the C<thrust_shell> process. Here is a simple example of the traffic when you create and show a window:
 
     $ THRUST_DEBUG=1 perl -MThrust -e 'Thrust->new->window->show->run'
 
@@ -338,6 +338,8 @@ Doug Hoyte, C<< <doug@hcsw.org> >>
 Copyright 2014 Doug Hoyte.
 
 This module is licensed under the same terms as perl itself.
+
+Thrust itself is Copyright (c) 2014 Stanislas Polu and is licensed under the MIT license.
 
 =cut
 
