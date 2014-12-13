@@ -3,7 +3,7 @@ use strict;
 use ExtUtils::MakeMaker;
 
 use LWP::Simple;
-use Archive::Unzip::Burst;
+use Archive::Extract;
 use File::ShareDir::Install;
 
 
@@ -36,7 +36,8 @@ if (!-e 'thrust.zip') {
 if (!-d 'share') {
   print "Extracting into share/\n";
   mkdir('share');
-  Archive::Unzip::Burst::unzip('thrust.zip', 'share/');
+  my $ae = Archive::Extract->new(archive => 'thrust.zip');
+  $ae->extract(to => 'share/') || die "unable to extract archive: " . $ae->error;
 }
 
 install_share 'share';
@@ -56,7 +57,7 @@ my %args = (
   },
   CONFIGURE_REQUIRES => {
     'LWP::Simple' => 0,
-    'Archive::Unzip::Burst' => 0,
+    'Archive::Extract' => 0,
     'File::ShareDir::Install' => 0,
   },
   LICENSE => 'perl',
