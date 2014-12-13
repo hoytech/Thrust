@@ -1,2 +1,5 @@
+0.101
+  * Change zip extracter module to Archive::Extract since it is more portable
+
 0.100
   * Initial CPAN release
