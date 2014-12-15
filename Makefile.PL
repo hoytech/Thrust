@@ -2,12 +2,12 @@ use strict;
 
 use ExtUtils::MakeMaker;
 
-use LWP::Simple;
+use LWP::UserAgent;
 use Archive::Extract;
 use File::ShareDir::Install;
 
-
 my $thrust_version = '0.7.6';
+my $thrust_archive = 'thrust.zip';
 
 my ($os, $arch);
 
@@ -26,17 +26,32 @@ if ($^O =~ /linux/i) {
 
 my $thrust_zipfile_url = "https://github.com/breach/thrust/releases/download/v$thrust_version/thrust-v$thrust_version-$os-$arch.zip";
 
-if (!-e 'thrust.zip') {
+if (!-e $thrust_archive) {
   print "Downloading $thrust_zipfile_url (be patient)\n";
-  unlink('thrust.zip.partial');
-  getstore($thrust_zipfile_url, 'thrust.zip.partial');
-  rename('thrust.zip.partial', 'thrust.zip');
+
+  my $ua = new LWP::UserAgent;
+  my $req = new HTTP::Request('GET', $thrust_zipfile_url);
+  my $res = $ua->request($req);
+
+  if (!$res->is_success) {
+    print "Failed to download $thrust_zipfile_url\n";
+    die $res->status_line, "\n";
+  }
+
+  my $file = $res->decoded_content( charset => 'none' );
+
+  unless(open ZIPFILE, ">$thrust_archive") {
+    die "Cannot $thrust_archive: $!";
+  }
+
+  print ZIPFILE $file;
+  close ZIPFILE;
 }
 
 if (!-d 'share') {
   print "Extracting into share/\n";
   mkdir('share');
-  my $ae = Archive::Extract->new(archive => 'thrust.zip');
+  my $ae = Archive::Extract->new(archive => $thrust_archive);
   $ae->extract(to => 'share/') || die "unable to extract archive: " . $ae->error;
 }
 
@@ -56,9 +71,10 @@ my %args = (
     'Scalar::Util' => 0,
   },
   CONFIGURE_REQUIRES => {
-    'LWP::Simple' => 0,
+    'LWP::UserAgent' => 0,
     'Archive::Extract' => 0,
     'File::ShareDir::Install' => 0,
+    'Mozilla::CA' => 0,
   },
   LICENSE => 'perl',
   dist => {
