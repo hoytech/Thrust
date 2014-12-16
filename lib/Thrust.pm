@@ -14,7 +14,14 @@ use Scalar::Util;
 use Thrust::Window;
 
 
-our $THRUST_PATH = File::ShareDir::dist_dir('Thrust') .  '/thrust_shell';
+our $THRUST_PATH;
+
+if ($^O =~ /darwin/i) {
+  $THRUST_PATH = File::ShareDir::dist_dir('Thrust') .  '/ThrustShell.app/Contents/MacOS/ThrustShell';
+} else {
+  $THRUST_PATH = File::ShareDir::dist_dir('Thrust') .  '/thrust_shell';
+}
+
 our $THRUST_BOUNDARY = "\n--(Foo)++__THRUST_SHELL_BOUNDARY__++(Bar)--\n";
 
 
