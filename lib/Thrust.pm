@@ -2,7 +2,7 @@ package Thrust;
 
 use common::sense;
 
-our $VERSION = '0.101';
+our $VERSION = '0.200';
 
 use AnyEvent;
 use AnyEvent::Util;
