@@ -10,17 +10,11 @@ use AnyEvent::Handle;
 use JSON::XS;
 use File::ShareDir;
 use Scalar::Util;
+use Alien::Thrust;
 
 use Thrust::Window;
 
 
-our $THRUST_PATH;
-
-if ($^O =~ /darwin/i) {
-  $THRUST_PATH = File::ShareDir::dist_dir('Thrust') .  '/ThrustShell.app/Contents/MacOS/ThrustShell';
-} else {
-  $THRUST_PATH = File::ShareDir::dist_dir('Thrust') .  '/thrust_shell';
-}
 
 our $THRUST_BOUNDARY = "\n--(Foo)++__THRUST_SHELL_BOUNDARY__++(Bar)--\n";
 
@@ -58,7 +52,7 @@ sub new {
 
   my ($fh1, $fh2) = portable_socketpair();
 
-  $self->{cv} = run_cmd [ $THRUST_PATH ],
+  $self->{cv} = run_cmd [ $Alien::Thrust::thrust_shell_binary ],
                         close_all => 1,
                         '>' => $fh2,
                         '<' => $fh2,
@@ -331,6 +325,8 @@ The fact that C<thrust_shell> binaries are duplicated for every language binding
 =head1 SEE ALSO
 
 L<The Thrust perl module github repo|https://github.com/hoytech/Thrust>
+
+L<Alien::Thrust>
 
 L<The Thrust project|https://github.com/breach/thrust> - Official website
 
