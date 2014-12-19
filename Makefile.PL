@@ -51,11 +51,15 @@ if (!-e $thrust_archive) {
 if (!-d 'share') {
   print "Extracting into share/\n";
   mkdir('share');
-  my $ae = Archive::Extract->new(archive => $thrust_archive);
-  $ae->extract(to => 'share/') || die "unable to extract archive: " . $ae->error;
+  if ($^O =~ /darwin/i) {
+    system("unzip -uqq thrust.zip -d share/");
+  } else {
+    my $ae = Archive::Extract->new(archive => $thrust_archive);
+    $ae->extract(to => 'share/') || die "unable to extract archive: " . $ae->error;
+  }
 }
 
-install_share 'share';
+#install_share 'share';
 
 
 my %args = (
@@ -90,5 +94,13 @@ my %args = (
 
 WriteMakefile(%args);
 
-package MY;
-use File::ShareDir::Install qw(postamble);
+#package MY;
+#use File::ShareDir::Install qw(postamble);
+sub MY::postamble {
+  return <<'FRAGMENT';
+config::
+	rm -rf $(INST_LIB)/auto/share/dist/$(DISTNAME)/ThrustShell.app/
+	mkdir -p $(INST_LIB)/auto/share/dist/$(DISTNAME)/
+	cp -R share/ThrustShell.app/ $(INST_LIB)/auto/share/dist/$(DISTNAME)/ThrustShell.app/
+FRAGMENT
+}
