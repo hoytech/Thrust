@@ -178,10 +178,6 @@ Thrust - Perl bindings to the Thrust cross-platform application framework
 
     $t->run; ## enter event loop
 
-=head1 DEPRECATED
-
-B<DEPRECATION NOTE>: I do not plan on developing this module any further. Please see L<Valence> and L<Alien::Electron> instead. Thanks.
-
 =head1 DESCRIPTION
 
 Thrust is a chromium-based cross-platform and cross-language application framework. It allows you to create "native"-like applications using HTML/CSS for the interface and (of course) perl for the glue code to filesystems, DBs, networking, libraries, and everything else perl is great at.
@@ -339,6 +335,8 @@ L<Alien::Thrust>
 L<The Thrust project|https://github.com/breach/thrust> - Official website
 
 L<The node.js Thrust bindings|https://github.com/breach/node-thrust/> - These are the most complete bindings
+
+L<Valence> and L<Alien::Electron> provide a similar solution using github's electron tool-kit. 
 
 =head1 AUTHOR
 
